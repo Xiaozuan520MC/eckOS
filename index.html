@@ -1,15 +1,44 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>eckOS官网</title>
+
+    <!-- ===== Three.js ===== -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
     <style>
+        /* ========= 全局重置 ========= */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+            background: #0a0c10;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #e0e8f0;
+        }
+
+        /* ========= Three.js 容器 ========= */
+        #three-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
         }
 
         /* ========= 启动画面 ========= */
@@ -19,7 +48,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #1a1a1e;
+            background: #0a0c10;
             z-index: 10000;
             display: flex;
             flex-direction: column;
@@ -27,169 +56,134 @@
             align-items: center;
             transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 1;
+            pointer-events: none;
         }
         .splash-screen.fade-out {
             opacity: 0;
-            pointer-events: none;
         }
         .splash-title {
             font-size: clamp(3rem, 12vw, 6rem);
             font-weight: 800;
             letter-spacing: -0.03em;
-            margin-bottom: 3rem;
-            background: linear-gradient(115deg, rgba(220, 235, 250, 0.95) 0%, rgba(180, 205, 230, 0.9) 45%, rgba(140, 175, 205, 0.85) 100%);
+            margin-bottom: 2.5rem;
+            background: linear-gradient(115deg, rgba(120, 200, 255, 0.95), rgba(60, 180, 255, 0.9), rgba(0, 150, 255, 0.85));
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+            text-shadow: 0 0 40px rgba(60, 180, 255, 0.3);
             animation: gentlePulse 1.2s ease-in-out infinite;
         }
         @keyframes gentlePulse {
-            0%, 100% { opacity: 0.9; text-shadow: 0 2px 10px rgba(255,255,255,0.1); }
-            50% { opacity: 1; text-shadow: 0 2px 20px rgba(255,255,245,0.3); }
+            0%, 100% { opacity: 0.9; text-shadow: 0 0 30px rgba(60,180,255,0.2); }
+            50% { opacity: 1; text-shadow: 0 0 60px rgba(60,180,255,0.5); }
         }
         .progress-container {
-            width: 240px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.15);
+            width: 200px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 4px;
             overflow: hidden;
-            margin-top: 1rem;
         }
         .progress-bar {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, #8aacc0, #c8dae8, #8aacc0);
+            background: linear-gradient(90deg, #3b9eff, #00d4ff, #3b9eff);
             border-radius: 4px;
-            animation: loadingProgress 1.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+            animation: loadingProgress 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
         }
         @keyframes loadingProgress {
             0% { width: 0%; }
-            20% { width: 15%; }
-            40% { width: 35%; }
-            60% { width: 65%; }
-            80% { width: 85%; }
+            30% { width: 25%; }
+            60% { width: 60%; }
+            85% { width: 85%; }
             100% { width: 100%; }
         }
 
-        /* ========= 主页面 ========= */
-        body {
-            font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
-            background: #2a2d33;
-            min-height: 100vh;
-            line-height: 1.4;
+        /* ========= 主内容 ========= */
+        .main-content {
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .main-content.visible {
+            opacity: 1;
         }
 
-        .glass-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-            background: radial-gradient(ellipse at 50% 30%, #353940 0%, #22252b 100%);
-        }
-        .glass-bg::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            left: -20%;
-            width: 140%;
-            height: 140%;
-            background: radial-gradient(circle at 40% 50%, rgba(100, 120, 150, 0.08) 0%, rgba(60, 80, 100, 0) 70%);
-            filter: blur(70px);
-            animation: subtleGlow 14s ease-in-out infinite alternate;
-            pointer-events: none;
-        }
-        @keyframes subtleGlow {
-            0% { transform: translate(-2%, -2%) scale(1); opacity: 0.4; }
-            100% { transform: translate(2%, 2%) scale(1.15); opacity: 0.8; }
-        }
-
-        .main-content { opacity: 1; }
         .container {
             max-width: 1280px;
             width: 90%;
             margin: 0 auto;
             padding: 2rem 0 4rem;
-            position: relative;
-            z-index: 2;
         }
 
-        /* ========= 真正透明的玻璃卡片 - 深色背景 ========= */
-        .glass-3d {
-            background: transparent;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border-radius: 28px;
-            border: 0.5px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 
-                0 8px 24px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06);
-            transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .glass-3d::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 35%;
-            background: linear-gradient(180deg, 
-                rgba(255, 255, 255, 0.04) 0%,
-                transparent 100%);
-            border-radius: 28px 28px 0 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .glass-3d:hover {
-            transform: translateY(-6px);
+        /* ========= 切换按钮 ========= */
+        .mode-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 60;
+            padding: 0.5rem 1rem;
             background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.18);
-            box-shadow: 
-                0 16px 40px rgba(0, 0, 0, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 40px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            opacity: 0;
+            transform: translateY(-10px);
+            font-family: inherit;
+        }
+        .mode-toggle.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .mode-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .mode-toggle .icon {
+            margin-right: 6px;
         }
 
-        /* ========= 灵动岛风格导航栏 - 放大版 ========= */
+        /* ========= 灵动岛导航 ========= */
         .navbar {
             position: sticky;
-            top: 12px;
-            z-index: 100;
+            top: 14px;
+            z-index: 50;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 1rem;
+            gap: 0.8rem;
             padding: 0.5rem 1.2rem;
             margin: 0 auto 1.2rem;
             width: fit-content;
             max-width: 90%;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 0.5px solid rgba(255, 255, 255, 0.08);
-            border-radius: 50px;
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.06);
+            border-radius: 60px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
             opacity: 0;
             transform: translateY(30px);
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
         }
         .navbar.animate-in {
             animation: popUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
-        
         .navbar a {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 500;
-            color: #b0bcc8;
+            color: rgba(255, 255, 255, 0.6);
             text-decoration: none;
-            padding: 0.4rem 1rem;
+            padding: 0.35rem 1rem;
             border-radius: 40px;
             transition: all 0.3s ease;
             background: transparent;
@@ -206,81 +200,103 @@
         .navbar a:nth-child(2) { animation-delay: 0.10s; }
         .navbar a:nth-child(3) { animation-delay: 0.17s; }
         .navbar a:nth-child(4) { animation-delay: 0.24s; }
-        
         .navbar a:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #d8e0ec;
+            color: #fff;
             transform: translateY(-1px);
         }
 
-        /* ========= 流畅淡入 + 上浮动画 ========= */
+        /* ========= 卡片玻璃质感 ========= */
+        .glass-3d {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 28px;
+            border: 0.5px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-3d::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+            border-radius: 28px 28px 0 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .glass-3d:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* ========= 动画 ========= */
         .animate-in {
             animation: popUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
         }
         @keyframes popUp {
-            0% {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            50% {
-                opacity: 0.8;
-                transform: translateY(-4px);
-            }
-            75% {
-                transform: translateY(3px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            0% { opacity: 0; transform: translateY(40px); }
+            50% { opacity: 0.8; transform: translateY(-4px); }
+            75% { transform: translateY(3px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
-        /* 所有需要动画的元素默认透明 */
-        .feature-item, .detail-card, .version-liquid, .btn-liquid, .social-link, .footer {
+        .feature-item,
+        .detail-card,
+        .version-liquid,
+        .btn-liquid,
+        .social-link,
+        .footer {
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.3s ease;
         }
 
-        /* 标题和副标题始终可见 */
-        .hero-glass-title, .tagline, .section-head {
+        .hero-glass-title,
+        .tagline,
+        .section-head {
             opacity: 1;
             transform: none;
         }
 
-        /* ========= Hero区 ========= */
+        /* ========= Hero ========= */
         .hero {
             text-align: center;
             padding: 3rem 1rem 2.5rem;
             scroll-margin-top: 80px;
         }
-        
         .hero-glass-title {
             font-size: clamp(4.8rem, 15vw, 8rem);
             font-weight: 800;
             letter-spacing: -0.03em;
             line-height: 1.1;
             margin-bottom: 0;
-            background: linear-gradient(115deg, rgba(200, 220, 240, 0.95) 0%, rgba(160, 185, 210, 0.9) 45%, rgba(120, 150, 180, 0.85) 100%);
+            background: linear-gradient(115deg, rgba(120, 200, 255, 0.95), rgba(60, 180, 255, 0.9), rgba(0, 150, 255, 0.85));
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 0 40px rgba(60, 180, 255, 0.15);
             display: inline-block;
             padding: 0 0.2rem;
         }
-        
         .tagline {
             font-size: clamp(1rem, 4vw, 1.55rem);
             font-weight: 490;
             display: inline-block;
             padding: 0.4rem 1.8rem;
-            color: #b0bcc8;
+            color: rgba(255, 255, 255, 0.5);
             margin-top: -0.8rem;
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(4px);
             border-radius: 60px;
-            border: 0.5px solid rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255, 255, 255, 0.03);
         }
 
         .section-head {
@@ -292,60 +308,63 @@
             display: inline-block;
             width: auto;
             padding: 0.3rem 2rem;
-            color: #c0c8d4;
+            color: rgba(255, 255, 255, 0.7);
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(4px);
             border-radius: 60px;
-            border: 0.5px solid rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255, 255, 255, 0.03);
         }
-        .section-head-wrapper { text-align: center; }
-        
+        .section-head-wrapper {
+            text-align: center;
+        }
+
+        /* ========= 核心特性 - 3×2 网格 ========= */
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 300px));
-            justify-content: center;
-            gap: 2rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.8rem;
             margin: 0 auto;
+            max-width: 1000px;
         }
-        
+
         .feature-item {
             width: 100%;
             padding: 2rem 1.5rem;
             text-align: center;
         }
         .feature-item .feature-icon {
-            width: 76px;
-            height: 76px;
-            line-height: 76px;
-            border-radius: 38px;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1rem;
-            font-size: 2.4rem;
+            font-size: 2.2rem;
             background: rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(2px);
-            color: #b0bcc8;
-            transition: transform 0.2s ease;
-            border: 0.5px solid rgba(255,255,255,0.04);
+            color: rgba(255, 255, 255, 0.7);
+            transition: transform 0.3s ease;
+            border: 0.5px solid rgba(255, 255, 255, 0.04);
         }
         .feature-item:hover .feature-icon {
-            transform: scale(1.05);
+            transform: scale(1.06);
             background: rgba(255, 255, 255, 0.08);
-            color: #c8d4e0;
+            color: #fff;
         }
         .feature-item h3 {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 640;
-            margin: 0.7rem 0 0.5rem;
-            color: #c8d0dc;
+            margin: 0.7rem 0 0.4rem;
+            color: rgba(255, 255, 255, 0.85);
         }
         .feature-item p {
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             line-height: 1.45;
-            color: #a0aab8;
+            color: rgba(255, 255, 255, 0.5);
         }
 
+        /* ========= 详情卡片 ========= */
         .details-section {
             margin: 4rem 0;
             scroll-margin-top: 80px;
@@ -355,37 +374,37 @@
             margin-bottom: 1.5rem;
         }
         .detail-card h4 {
-            font-size: 1.55rem;
+            font-size: 1.45rem;
             font-weight: 640;
-            margin-bottom: 0.7rem;
+            margin-bottom: 0.6rem;
             padding-left: 1rem;
-            border-left: 4px solid rgba(120, 150, 180, 0.15);
-            color: #c8d0dc;
+            border-left: 4px solid rgba(60, 180, 255, 0.3);
+            color: rgba(255, 255, 255, 0.85);
         }
         .detail-card p {
-            line-height: 1.55;
+            line-height: 1.6;
             margin-bottom: 0.8rem;
-            color: #a0aab8;
+            color: rgba(255, 255, 255, 0.5);
         }
         .tech-badge {
             display: inline-block;
             border-radius: 60px;
-            padding: 0.2rem 0.9rem;
+            padding: 0.15rem 0.9rem;
             font-size: 0.7rem;
             font-weight: 500;
             margin-right: 0.5rem;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(2px);
-            color: #b0bcc8;
-            transition: transform 0.2s ease;
-            border: 0.5px solid rgba(255,255,255,0.04);
+            color: rgba(255, 255, 255, 0.5);
+            border: 0.5px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
         }
         .detail-card:hover .tech-badge {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.06);
-            color: #c8d4e0;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
         }
 
+        /* ========= 下载按钮 ========= */
         .download-wrap {
             text-align: center;
             margin: 2rem 0 2rem;
@@ -395,30 +414,30 @@
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            padding: 1.1rem 3rem;
-            font-size: 1.5rem;
+            padding: 1rem 3rem;
+            font-size: 1.4rem;
             font-weight: 640;
             cursor: pointer;
-            letter-spacing: -0.2px;
-            color: #c0c8d4;
+            color: rgba(255, 255, 255, 0.8);
             border: 0.5px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(4px);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
             border-radius: 60px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
         .btn-liquid:hover {
             transform: translateY(-4px) scale(1.01);
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            color: #d8e0ec;
+            box-shadow: 0 12px 40px rgba(60, 180, 255, 0.15);
+            color: #fff;
         }
 
+        /* ========= 版本选择 ========= */
         .version-flex {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 380px));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             justify-content: center;
             gap: 2rem;
             margin: 2rem auto;
@@ -429,44 +448,45 @@
             text-align: center;
         }
         .version-name {
-            font-size: 2rem;
+            font-size: 1.9rem;
             font-weight: 700;
-            color: #c8d0dc;
+            color: rgba(255, 255, 255, 0.85);
         }
         .version-sub {
             font-size: 0.8rem;
             display: inline-block;
-            padding: 0.2rem 1rem;
+            padding: 0.15rem 1rem;
             border-radius: 40px;
-            margin: 0.5rem 0;
-            background: rgba(255, 255, 255, 0.03);
-            color: #b0bcc8;
-            border: 0.5px solid rgba(255,255,255,0.04);
+            margin: 0.4rem 0;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.5);
+            border: 0.5px solid rgba(255, 255, 255, 0.04);
         }
         .version-desc {
             margin: 1rem 0;
             font-size: 0.9rem;
-            color: #a0aab8;
+            color: rgba(255, 255, 255, 0.5);
         }
         .btn-version {
             backdrop-filter: blur(4px);
-            padding: 0.7rem 1.8rem;
+            padding: 0.6rem 1.8rem;
             border-radius: 60px;
             font-weight: 550;
             cursor: pointer;
             width: 70%;
             transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
-            color: #b0bcc8;
+            color: rgba(255, 255, 255, 0.6);
             border: 0.5px solid rgba(255, 255, 255, 0.06);
             background: rgba(255, 255, 255, 0.02);
         }
         .btn-version:hover {
             transform: translateY(-4px) scale(1.01);
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.18);
-            color: #c8d4e0;
+            color: #fff;
         }
 
+        /* ========= 社交链接 ========= */
         .social-links {
             display: flex;
             justify-content: center;
@@ -478,11 +498,11 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 0.8rem 1.8rem;
+            padding: 0.7rem 1.8rem;
             font-size: 1rem;
             font-weight: 550;
             text-decoration: none;
-            color: #b0bcc8;
+            color: rgba(255, 255, 255, 0.5);
             border-radius: 32px;
             border: 0.5px solid rgba(255, 255, 255, 0.05);
             background: rgba(255, 255, 255, 0.02);
@@ -490,12 +510,13 @@
             transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
         .social-link:hover {
-            transform: translateY(-4px) scale(1.01);
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.18);
-            color: #c8d4e0;
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #fff;
         }
 
+        /* ========= 页脚 ========= */
         .footer {
             text-align: center;
             margin: 3rem auto 0;
@@ -505,16 +526,30 @@
             width: fit-content;
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(4px);
-            color: #909aa8;
+            color: rgba(255, 255, 255, 0.25);
             transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
             opacity: 0;
             transform: translateY(40px);
-            border: 0.5px solid rgba(255,255,255,0.04);
+            border: 0.5px solid rgba(255, 255, 255, 0.03);
         }
         .footer:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             background: rgba(255, 255, 255, 0.06);
-            color: #b0bcc8;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ========= 响应式 ========= */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 700px;
+            }
+        }
+        @media (max-width: 640px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
         }
 
         @media (max-width: 760px) {
@@ -522,214 +557,592 @@
             .hero { padding: 3rem 0 1.5rem; }
             .btn-liquid { padding: 0.8rem 2rem; font-size: 1.2rem; }
             .btn-version { width: 90%; }
-            .features-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
             .version-flex { grid-template-columns: 1fr; }
-            .detail-card h4 { font-size: 1.3rem; }
+            .detail-card h4 { font-size: 1.25rem; }
             .tagline { margin-top: -0.4rem; }
             .social-links { gap: 1rem; }
-            .social-link { padding: 0.6rem 1.2rem; font-size: 0.85rem; }
-            .navbar { 
-                top: 8px; 
-                padding: 0.4rem 0.8rem; 
-                gap: 0.5rem;
-                border-radius: 40px;
-            }
-            .navbar a { 
-                font-size: 0.8rem; 
-                padding: 0.3rem 0.7rem; 
-                letter-spacing: 0.2px;
-            }
+            .social-link { padding: 0.5rem 1.2rem; font-size: 0.85rem; }
+            .navbar { top: 8px; padding: 0.35rem 0.8rem; gap: 0.4rem; border-radius: 40px; }
+            .navbar a { font-size: 0.75rem; padding: 0.25rem 0.6rem; letter-spacing: 0.2px; }
+            .mode-toggle { top: 12px; right: 12px; padding: 0.35rem 0.8rem; font-size: 0.65rem; }
         }
-        html { scroll-behavior: smooth; }
+
+        /* ===== 滚动条 ===== */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 10px; }
     </style>
 </head>
 <body>
-<div class="splash-screen" id="splashScreen">
-    <div class="splash-title">eckOS</div>
-    <div class="progress-container"><div class="progress-bar"></div></div>
-</div>
 
-<div class="glass-bg"></div>
+    <!-- ===== 启动画面 ===== -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-title">eckOS</div>
+        <div class="progress-container"><div class="progress-bar"></div></div>
+    </div>
 
-<!-- ========= 灵动岛导航栏 ========= -->
-<nav class="navbar" id="navbar">
-    <a href="#home">首页</a>
-    <a href="#features">介绍</a>
-    <a href="#download">下载</a>
-    <a id="sponsorBtn">赞助</a>
-</nav>
+    <!-- ===== Three.js 容器 ===== -->
+    <div id="three-container"></div>
 
-<div class="main-content">
-    <div class="container">
-        <div id="home" class="hero" style="scroll-margin-top: 80px;">
-            <div class="hero-glass-title">eckOS</div>
-            <div class="tagline">一个从内核开始的现代操作系统</div>
-        </div>
+    <!-- ===== 模式切换按钮 ===== -->
+    <button class="mode-toggle" id="modeToggle">
+        <span class="icon">💧</span> 切换水背景
+    </button>
 
-        <div id="features" style="scroll-margin-top: 70px;">
-            <div class="section-head-wrapper"><div class="section-head">核心特性</div></div>
-            <div class="features-grid">
-                <div class="feature-item glass-3d"><div class="feature-icon">⚙️</div><h3>汇编 + C 原生</h3><p>内核与系统底层使用汇编与C语言构建，实现对硬件的精准掌控与极致性能。</p></div>
-                <div class="feature-item glass-3d"><div class="feature-icon">💠</div><h3>纯血 x86-64</h3><p>专为现代64位处理器设计，充分发挥硬件潜能，无历史包袱。</p></div>
-                <div class="feature-item glass-3d"><div class="feature-icon">💧</div><h3>液态 GUI 引擎</h3><p>原生窗口合成器带来如流水般的视觉体验，毛玻璃效果深度融合。</p></div>
-                <div class="feature-item glass-3d"><div class="feature-icon">🔒</div><h3>内生安全</h3><p>基于能力的访问控制与驱动隔离机制，从架构层面守护系统安全。</p></div>
-                <div class="feature-item glass-3d"><div class="feature-icon">🌊</div><h3>开源生态</h3><p>核心基础库与工具链开放，社区共建，驱动持续创新。</p></div>
-                <div class="feature-item glass-3d"><div class="feature-icon">📖</div><h3>从零开始写系统</h3><p>完整的开发文档与范例，带你理解操作系统底层运作的每个细节。</p></div>
+    <!-- ===== 主内容 ===== -->
+    <div class="main-content" id="mainContent">
+        <div class="container">
+
+            <!-- ===== 导航 ===== -->
+            <nav class="navbar" id="navbar">
+                <a href="#home">首页</a>
+                <a href="#features">介绍</a>
+                <a href="#download">下载</a>
+                <a id="sponsorBtn">赞助</a>
+            </nav>
+
+            <!-- ===== Hero ===== -->
+            <div id="home" class="hero" style="scroll-margin-top:80px;">
+                <div class="hero-glass-title">eckOS</div>
+                <div class="tagline">一个从内核开始的现代操作系统</div>
             </div>
 
-            <div class="section-head-wrapper"><div class="section-head">深度解码 eckOS</div></div>
-            <div class="details-section">
-                <div class="detail-card glass-3d"><h4>从零到一的内核之旅</h4><p>eckOS 不是任何现有系统的分支，而是一个完全从零开始构建的操作系统。从引导程序到内存管理，从进程调度到文件系统，每一行代码都经过精心设计，体现了对计算机底层最原初的追求。</p><span class="tech-badge">自主内核</span><span class="tech-badge">纯净代码</span><span class="tech-badge">底层架构</span></div>
-                <div class="detail-card glass-3d"><h4>使用自制内核 eck-system</h4><p>eckOS 搭载了完全自主研发的 eck-system 内核，采用轻量级微内核架构，支持抢占式多任务处理、高效内存管理以及模块化驱动框架。内核代码完全由汇编与 C 语言编写，保证了极低的资源占用和极高的运行效率。</p><span class="tech-badge">微内核架构</span><span class="tech-badge">抢占式调度</span><span class="tech-badge">模块化驱动</span></div>
-                <div class="detail-card glass-3d"><h4>灵活的内核设计</h4><p>eckOS 的内核架构正处于持续演进之中，融合了微内核的服务隔离思路与宏内核的高效通信能力。目前已实现抢占式调度、分页内存管理以及可扩展的驱动框架。</p><span class="tech-badge">抢占式调度</span><span class="tech-badge">分页内存</span><span class="tech-badge">驱动框架</span></div>
-                <div class="detail-card glass-3d"><h4>液态玻璃 GUI 体验</h4><p>受现代设计语言启发，eckOS 的图形界面采用硬件加速合成，窗口自带动态模糊与镜面高光。所有视觉效果均由 GPU 实时渲染，无需额外图片资源。</p><span class="tech-badge">硬件加速</span><span class="tech-badge">实时模糊</span><span class="tech-badge">流畅动效</span></div>
-                <div class="detail-card glass-3d"><h4>面向未来的安全架构</h4><p>每个系统服务运行在独立的地址空间，驱动程序通过能力令牌与内核通信。这种设计确保了即使某个组件出现问题，也不会波及整个系统。</p><span class="tech-badge">能力模型</span><span class="tech-badge">驱动沙箱</span><span class="tech-badge">服务隔离</span></div>
-                <div class="detail-card glass-3d"><h4>开放 · 共享 · 演进</h4><p>eckOS 选择将标准库、基础工具链以及开发文档完全开放。我们相信，一个优秀的操作系统需要社区的滋养。欢迎加入我们的旅程。</p><span class="tech-badge">开源工具链</span><span class="tech-badge">完善文档</span><span class="tech-badge">社区驱动</span></div>
-            </div>
-        </div>
-
-        <div id="download" style="scroll-margin-top: 70px;">
-            <div class="download-wrap">
-                <button id="mainDownloadBtn" class="btn-liquid">⬇️ 下载 eckOS</button>
-            </div>
-            <div id="versionSection">
-                <div class="section-head-wrapper"><div class="section-head">选择版本</div></div>
-                <div class="version-flex">
-                    <div class="version-liquid glass-3d"><div class="version-name">稳定版</div><div class="version-sub">Stable · 长期可靠</div><div class="version-desc">经过完整测试的内核与基础用户态，<br>适合日常使用与开发评估。</div><button id="stableBtn" class="btn-version">下载稳定版</button></div>
-                    <div class="version-liquid glass-3d"><div class="version-name">内核下载</div><div class="version-sub">🧪 内核预览</div><div class="version-desc">包含最新 GUI 改进与新特性，<br>体验 eckOS 的快速演进。</div><button id="betaBtn" class="btn-version">下载内核</button></div>
+            <!-- ===== 核心特性（3×2 网格） ===== -->
+            <div id="features" style="scroll-margin-top:70px;">
+                <div class="section-head-wrapper"><div class="section-head">核心特性</div></div>
+                <div class="features-grid">
+                    <div class="feature-item glass-3d"><div class="feature-icon">⚙️</div><h3>汇编 + C 原生</h3><p>内核与系统底层使用汇编与C语言构建，实现对硬件的精准掌控与极致性能。</p></div>
+                    <div class="feature-item glass-3d"><div class="feature-icon">💠</div><h3>纯血 x86-64</h3><p>专为现代64位处理器设计，充分发挥硬件潜能，无历史包袱。</p></div>
+                    <div class="feature-item glass-3d"><div class="feature-icon">💧</div><h3>液态 GUI 引擎</h3><p>原生窗口合成器带来如流水般的视觉体验，毛玻璃效果深度融合。</p></div>
+                    <div class="feature-item glass-3d"><div class="feature-icon">🔒</div><h3>内生安全</h3><p>基于能力的访问控制与驱动隔离机制，从架构层面守护系统安全。</p></div>
+                    <div class="feature-item glass-3d"><div class="feature-icon">🌊</div><h3>开源生态</h3><p>核心基础库与工具链开放，社区共建，驱动持续创新。</p></div>
+                    <div class="feature-item glass-3d"><div class="feature-icon">📖</div><h3>从零开始写系统</h3><p>完整的开发文档与范例，带你理解操作系统底层运作的每个细节。</p></div>
                 </div>
             </div>
-        </div>
 
-        <div class="social-links">
-            <a href="https://github.com/Xiaozuan520MC" target="_blank" rel="noopener noreferrer" class="social-link">🐙 GitHub</a>
+            <!-- ===== 深度解码 ===== -->
+            <div class="section-head-wrapper"><div class="section-head">深度解码 eckOS</div></div>
+            <div class="details-section">
+                <div class="detail-card glass-3d">
+                    <h4>从零到一的内核之旅</h4>
+                    <p>eckOS 不是任何现有系统的分支，而是一个完全从零开始构建的操作系统。从引导程序到内存管理，从进程调度到文件系统，每一行代码都经过精心设计，体现了对计算机底层最原初的追求。</p>
+                    <span class="tech-badge">自主内核</span><span class="tech-badge">纯净代码</span><span class="tech-badge">底层架构</span>
+                </div>
+                <div class="detail-card glass-3d">
+                    <h4>使用自制内核 eck-system</h4>
+                    <p>eckOS 搭载了完全自主研发的 eck-system 内核，采用轻量级微内核架构，支持抢占式多任务处理、高效内存管理以及模块化驱动框架。内核代码完全由汇编与 C 语言编写，保证了极低的资源占用和极高的运行效率。</p>
+                    <span class="tech-badge">微内核架构</span><span class="tech-badge">抢占式调度</span><span class="tech-badge">模块化驱动</span>
+                </div>
+                <div class="detail-card glass-3d">
+                    <h4>灵活的内核设计</h4>
+                    <p>eckOS 的内核架构正处于持续演进之中，融合了微内核的服务隔离思路与宏内核的高效通信能力。目前已实现抢占式调度、分页内存管理以及可扩展的驱动框架。</p>
+                    <span class="tech-badge">抢占式调度</span><span class="tech-badge">分页内存</span><span class="tech-badge">驱动框架</span>
+                </div>
+                <div class="detail-card glass-3d">
+                    <h4>液态玻璃 GUI 体验</h4>
+                    <p>受现代设计语言启发，eckOS 的图形界面采用硬件加速合成，窗口自带动态模糊与镜面高光。所有视觉效果均由 GPU 实时渲染，无需额外图片资源。</p>
+                    <span class="tech-badge">硬件加速</span><span class="tech-badge">实时模糊</span><span class="tech-badge">流畅动效</span>
+                </div>
+                <div class="detail-card glass-3d">
+                    <h4>面向未来的安全架构</h4>
+                    <p>每个系统服务运行在独立的地址空间，驱动程序通过能力令牌与内核通信。这种设计确保了即使某个组件出现问题，也不会波及整个系统。</p>
+                    <span class="tech-badge">能力模型</span><span class="tech-badge">驱动沙箱</span><span class="tech-badge">服务隔离</span>
+                </div>
+                <div class="detail-card glass-3d">
+                    <h4>开放 · 共享 · 演进</h4>
+                    <p>eckOS 选择将标准库、基础工具链以及开发文档完全开放。我们相信，一个优秀的操作系统需要社区的滋养。欢迎加入我们的旅程。</p>
+                    <span class="tech-badge">开源工具链</span><span class="tech-badge">完善文档</span><span class="tech-badge">社区驱动</span>
+                </div>
+            </div>
+
+            <!-- ===== 下载区域 ===== -->
+            <div id="download" style="scroll-margin-top:70px;">
+                <div class="download-wrap">
+                    <button id="mainDownloadBtn" class="btn-liquid">⬇️ 下载 eckOS</button>
+                </div>
+                <div id="versionSection">
+                    <div class="section-head-wrapper"><div class="section-head">选择版本</div></div>
+                    <div class="version-flex">
+                        <div class="version-liquid glass-3d">
+                            <div class="version-name">稳定版</div>
+                            <div class="version-sub">Stable · 长期可靠</div>
+                            <div class="version-desc">经过完整测试的内核与基础用户态，<br />适合日常使用与开发评估。</div>
+                            <button id="stableBtn" class="btn-version">下载稳定版</button>
+                        </div>
+                        <div class="version-liquid glass-3d">
+                            <div class="version-name">内核下载</div>
+                            <div class="version-sub">🧪 内核预览</div>
+                            <div class="version-desc">包含最新 GUI 改进与新特性，<br />体验 eckOS 的快速演进。</div>
+                            <button id="betaBtn" class="btn-version">下载内核</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 社交链接 ===== -->
+            <div class="social-links">
+                <a href="https://github.com/Xiaozuan520MC" target="_blank" rel="noopener noreferrer" class="social-link">🐙 GitHub</a>
+            </div>
+
+            <!-- ===== 页脚 ===== -->
+            <div class="footer" id="footer">eckOS — 从内核编织液态未来 | 纯粹 · 透明 · 极致</div>
+
         </div>
-        <div class="footer">eckOS — 从内核编织液态未来 | 纯粹 · 透明 · 极致</div>
     </div>
-</div>
 
-<script>
-    (function() {
-        const splashScreen = document.getElementById('splashScreen');
-        const nav = document.getElementById('navbar');
-        const navLinks = document.querySelectorAll('.navbar a');
-        const sponsorBtn = document.getElementById('sponsorBtn');
-        
-        sponsorBtn.addEventListener('click', function(e) {
+    <!-- ============================ Three.js 双模式背景 ============================ -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- 基础场景 ---
+        const container = document.getElementById('three-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 18);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x0a0c10, 1);
+        container.appendChild(renderer.domElement);
+
+        // --- 共用纹理 ---
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.9)');
+            gradient.addColorStop(0.6, 'rgba(200,230,255,0.4)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+        const glowTexture = createGlowTexture();
+
+        // ============================================================
+        //  模式 1：动态流体粒子（多彩，复杂运动）
+        // ============================================================
+        const FLUID_COUNT = 1800;
+        const fluidPos = new Float32Array(FLUID_COUNT * 3);
+        const fluidCol = new Float32Array(FLUID_COUNT * 3);
+        const fluidSizes = new Float32Array(FLUID_COUNT);
+        const fluidPhases = new Float32Array(FLUID_COUNT);
+
+        const fluidPalette = [
+            new THREE.Color(0x4a6cff), new THREE.Color(0x8b5cf6),
+            new THREE.Color(0xec4899), new THREE.Color(0x06b6d4),
+            new THREE.Color(0xf59e0b), new THREE.Color(0x10b981),
+        ];
+
+        for (let i = 0; i < FLUID_COUNT; i++) {
+            const radius = 3.5 + Math.random() * 7;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = (Math.random() - 0.5) * 0.8;
+            fluidPos[i * 3] = Math.cos(theta) * radius * 0.8;
+            fluidPos[i * 3 + 1] = Math.sin(phi) * 1.2 + (Math.random() - 0.5) * 0.5;
+            fluidPos[i * 3 + 2] = Math.sin(theta) * radius * 0.8;
+
+            const c1 = fluidPalette[Math.floor(Math.random() * fluidPalette.length)];
+            const c2 = fluidPalette[Math.floor(Math.random() * fluidPalette.length)];
+            const col = c1.clone().lerp(c2, Math.random());
+            const bright = 0.6 + Math.random() * 0.4;
+            fluidCol[i * 3] = col.r * bright;
+            fluidCol[i * 3 + 1] = col.g * bright;
+            fluidCol[i * 3 + 2] = col.b * bright;
+
+            fluidSizes[i] = 0.12 + Math.random() * 0.25;
+            fluidPhases[i] = Math.random() * Math.PI * 2;
+        }
+
+        const fluidGeo = new THREE.BufferGeometry();
+        fluidGeo.setAttribute('position', new THREE.BufferAttribute(fluidPos, 3));
+        fluidGeo.setAttribute('color', new THREE.BufferAttribute(fluidCol, 3));
+        fluidGeo.setAttribute('size', new THREE.BufferAttribute(fluidSizes, 1));
+
+        const fluidMat = new THREE.PointsMaterial({
+            size: 0.35,
+            map: glowTexture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.85,
+            vertexColors: true,
+            sizeAttenuation: true,
+        });
+        const fluidSystem = new THREE.Points(fluidGeo, fluidMat);
+        scene.add(fluidSystem);
+
+        // ============================================================
+        //  模式 2：纯水粒子（水蓝色，柔和流动）
+        // ============================================================
+        const WATER_COUNT = 2000;
+        const waterPos = new Float32Array(WATER_COUNT * 3);
+        const waterCol = new Float32Array(WATER_COUNT * 3);
+        const waterSizes = new Float32Array(WATER_COUNT);
+        const waterPhases = new Float32Array(WATER_COUNT);
+
+        const waterColors = [
+            new THREE.Color(0x3b9eff), new THREE.Color(0x00d4ff),
+            new THREE.Color(0x4fc3f7), new THREE.Color(0x80d8ff),
+            new THREE.Color(0x18ffff),
+        ];
+
+        for (let i = 0; i < WATER_COUNT; i++) {
+            const radius = 3.0 + Math.random() * 8;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = (Math.random() - 0.5) * 0.6;
+            waterPos[i * 3] = Math.cos(theta) * radius * 0.8;
+            waterPos[i * 3 + 1] = Math.sin(phi) * 1.0 + (Math.random() - 0.5) * 0.4;
+            waterPos[i * 3 + 2] = Math.sin(theta) * radius * 0.8;
+
+            const c1 = waterColors[Math.floor(Math.random() * waterColors.length)];
+            const c2 = waterColors[Math.floor(Math.random() * waterColors.length)];
+            const col = c1.clone().lerp(c2, Math.random());
+            const bright = 0.6 + Math.random() * 0.4;
+            waterCol[i * 3] = col.r * bright;
+            waterCol[i * 3 + 1] = col.g * bright;
+            waterCol[i * 3 + 2] = col.b * bright;
+
+            waterSizes[i] = 0.1 + Math.random() * 0.3;
+            waterPhases[i] = Math.random() * Math.PI * 2;
+        }
+
+        const waterGeo = new THREE.BufferGeometry();
+        waterGeo.setAttribute('position', new THREE.BufferAttribute(waterPos, 3));
+        waterGeo.setAttribute('color', new THREE.BufferAttribute(waterCol, 3));
+        waterGeo.setAttribute('size', new THREE.BufferAttribute(waterSizes, 1));
+
+        const waterMat = new THREE.PointsMaterial({
+            size: 0.4,
+            map: glowTexture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.0, // 默认隐藏
+            vertexColors: true,
+            sizeAttenuation: true,
+        });
+        const waterSystem = new THREE.Points(waterGeo, waterMat);
+        scene.add(waterSystem);
+
+        // ============================================================
+        //  背景雾层（始终存在）
+        // ============================================================
+        const fogCount = 600;
+        const fogPos = new Float32Array(fogCount * 3);
+        for (let i = 0; i < fogCount; i++) {
+            const r = 6 + Math.random() * 15;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = (Math.random() - 0.5) * Math.PI * 0.5;
+            fogPos[i * 3] = Math.cos(theta) * Math.cos(phi) * r;
+            fogPos[i * 3 + 1] = Math.sin(phi) * r * 0.3;
+            fogPos[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * r;
+        }
+        const fogGeo = new THREE.BufferGeometry();
+        fogGeo.setAttribute('position', new THREE.BufferAttribute(fogPos, 3));
+        const fogMat = new THREE.PointsMaterial({
+            size: 0.5,
+            color: 0x4488cc,
+            transparent: true,
+            opacity: 0.06,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            sizeAttenuation: true,
+        });
+        const fogSystem = new THREE.Points(fogGeo, fogMat);
+        scene.add(fogSystem);
+
+        // ============================================================
+        //  模式管理
+        // ============================================================
+        let currentMode = 'fluid'; // 'fluid' | 'water'
+        let isTransitioning = false;
+        let transitionProgress = 0; // 0 -> 1
+
+        const toggleBtn = document.getElementById('modeToggle');
+
+        function setMode(mode) {
+            if (mode === currentMode || isTransitioning) return;
+            isTransitioning = true;
+            transitionProgress = 0;
+
+            const fromFluid = currentMode === 'fluid';
+            const toFluid = mode === 'fluid';
+
+            const startTime = performance.now();
+            const duration = 600; // ms
+
+            function step(time) {
+                const elapsed = time - startTime;
+                const t = Math.min(elapsed / duration, 1);
+                // 缓动：ease-in-out
+                const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+                if (fromFluid && toFluid === false) {
+                    // fluid -> water
+                    fluidMat.opacity = 0.85 * (1 - ease);
+                    waterMat.opacity = 0.0 + ease * 0.8;
+                } else {
+                    // water -> fluid
+                    waterMat.opacity = 0.8 * (1 - ease);
+                    fluidMat.opacity = 0.0 + ease * 0.85;
+                }
+
+                if (t < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    // 最终状态
+                    if (mode === 'fluid') {
+                        fluidMat.opacity = 0.85;
+                        waterMat.opacity = 0.0;
+                    } else {
+                        waterMat.opacity = 0.8;
+                        fluidMat.opacity = 0.0;
+                    }
+                    currentMode = mode;
+                    isTransitioning = false;
+                    toggleBtn.innerHTML = mode === 'fluid' ?
+                        '<span class="icon">💧</span> 切换水背景' :
+                        '<span class="icon">✨</span> 切换流体背景';
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            if (isTransitioning) return;
+            setMode(currentMode === 'fluid' ? 'water' : 'fluid');
+        });
+
+        // ============================================================
+        //  鼠标交互
+        // ============================================================
+        let mouseX = 0,
+            mouseY = 0;
+        let targetMouseX = 0,
+            targetMouseY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            targetMouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                targetMouseX = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+                targetMouseY = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+            }
+        }, { passive: true });
+
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+
+        // ============================================================
+        //  动画循环
+        // ============================================================
+        let time = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.004;
+            mouseX += (targetMouseX - mouseX) * 0.04;
+            mouseY += (targetMouseY - mouseY) * 0.04;
+
+            // ---- 更新流体粒子 ----
+            const fPos = fluidGeo.attributes.position.array;
+            const fSizes = fluidGeo.attributes.size.array;
+            for (let i = 0; i < FLUID_COUNT; i++) {
+                const i3 = i * 3;
+                const phase = fluidPhases[i];
+                const baseRadius = 3.5 + (i % 5) * 1.2;
+                const baseAngle = (i / FLUID_COUNT) * Math.PI * 6 + phase;
+
+                const wave1 = Math.sin(time * 0.6 + phase * 1.3 + i * 0.001) * 0.8;
+                const wave2 = Math.cos(time * 0.4 + phase * 0.7 + i * 0.002) * 0.6;
+                const wave3 = Math.sin(time * 0.9 + phase * 1.7 + i * 0.003) * 0.4;
+
+                const radiusOffset = wave1 * 0.5 + wave2 * 0.3;
+                const angleOffset = wave2 * 0.4 + wave3 * 0.2;
+                const heightOffset = wave1 * 0.3 + wave3 * 0.5;
+
+                const r = baseRadius + radiusOffset;
+                const angle = baseAngle + angleOffset + time * 0.08;
+
+                const mx = mouseX * 2.5;
+                const my = mouseY * 1.2;
+                fPos[i3] = Math.cos(angle) * r + mx * 0.12;
+                fPos[i3 + 1] = Math.sin(angle * 0.5 + time * 0.3) * 0.6 + heightOffset * 0.3 + my * 0.12;
+                fPos[i3 + 2] = Math.sin(angle) * r + (mouseX * 0.3) * 0.12;
+
+                const pulse = 0.7 + 0.3 * Math.sin(time * 1.2 + phase + i * 0.01);
+                fSizes[i] = (0.12 + (i % 3) * 0.06) * pulse;
+            }
+            fluidGeo.attributes.position.needsUpdate = true;
+            fluidGeo.attributes.size.needsUpdate = true;
+
+            // ---- 更新水粒子 ----
+            const wPos = waterGeo.attributes.position.array;
+            const wSizes = waterGeo.attributes.size.array;
+            for (let i = 0; i < WATER_COUNT; i++) {
+                const i3 = i * 3;
+                const phase = waterPhases[i];
+                const baseRadius = 3.0 + (i % 6) * 1.0;
+                const baseAngle = (i / WATER_COUNT) * Math.PI * 5 + phase;
+
+                const wave1 = Math.sin(time * 0.5 + phase * 1.1 + i * 0.001) * 0.7;
+                const wave2 = Math.cos(time * 0.35 + phase * 0.6 + i * 0.002) * 0.5;
+                const wave3 = Math.sin(time * 0.8 + phase * 1.5 + i * 0.003) * 0.4;
+
+                const radiusOffset = wave1 * 0.4 + wave2 * 0.3;
+                const angleOffset = wave2 * 0.3 + wave3 * 0.2;
+                const heightOffset = wave1 * 0.25 + wave3 * 0.4;
+
+                const r = baseRadius + radiusOffset;
+                const angle = baseAngle + angleOffset + time * 0.06;
+
+                const mx = mouseX * 2.5;
+                const my = mouseY * 1.2;
+                wPos[i3] = Math.cos(angle) * r + mx * 0.12;
+                wPos[i3 + 1] = Math.sin(angle * 0.4 + time * 0.25) * 0.5 + heightOffset * 0.25 + my * 0.12;
+                wPos[i3 + 2] = Math.sin(angle) * r + (mouseX * 0.2) * 0.12;
+
+                const pulse = 0.7 + 0.3 * Math.sin(time * 1.0 + phase + i * 0.008);
+                wSizes[i] = (0.1 + (i % 4) * 0.05) * pulse;
+            }
+            waterGeo.attributes.position.needsUpdate = true;
+            waterGeo.attributes.size.needsUpdate = true;
+
+            // ---- 相机跟随 ----
+            const rotX = mouseY * 0.05;
+            const rotY = mouseX * 0.07;
+            camera.position.x = Math.sin(rotY) * 18 * 0.15;
+            camera.position.y = Math.sin(rotX) * 18 * 0.12 + 0.3;
+            camera.position.z = 18 * 0.88;
+            camera.lookAt(0, 0, 0);
+
+            fogSystem.rotation.y += 0.0003;
+            fogSystem.rotation.x += 0.0001;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ============================================================
+        //  启动画面 & 主内容动画
+        // ============================================================
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            const main = document.getElementById('mainContent');
+            const nav = document.getElementById('navbar');
+            const navLinks = document.querySelectorAll('.navbar a');
+            const toggle = document.getElementById('modeToggle');
+
+            splash.classList.add('fade-out');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                main.classList.add('visible');
+                toggle.classList.add('visible');
+
+                nav.classList.add('animate-in');
+                navLinks.forEach((link, idx) => {
+                    setTimeout(() => link.classList.add('animate-in'), idx * 70 + 80);
+                });
+
+                const cards = [
+                    ...document.querySelectorAll('.feature-item'),
+                    ...document.querySelectorAll('.detail-card'),
+                    ...document.querySelectorAll('.version-liquid'),
+                    ...document.querySelectorAll('.btn-liquid'),
+                    ...document.querySelectorAll('.social-link'),
+                    ...document.querySelectorAll('.footer')
+                ];
+
+                cards.forEach((el, idx) => {
+                    let delay = 0;
+                    if (el.classList.contains('feature-item')) {
+                        const i = Array.from(el.parentNode.children).indexOf(el);
+                        delay = 0.05 + i * 0.06;
+                    } else if (el.classList.contains('detail-card')) {
+                        const i = Array.from(el.parentNode.children).indexOf(el);
+                        delay = 0.40 + i * 0.06;
+                    } else if (el.classList.contains('version-liquid')) {
+                        const i = Array.from(el.parentNode.children).indexOf(el);
+                        delay = 0.70 + i * 0.06;
+                    } else if (el.classList.contains('btn-liquid')) delay = 0.65;
+                    else if (el.classList.contains('social-link')) delay = 0.78;
+                    else if (el.classList.contains('footer')) delay = 0.85;
+                    setTimeout(() => el.classList.add('animate-in'), delay * 1000 + 120);
+                });
+            }, 100);
+        }, 1500);
+
+        // ============================================================
+        //  交互事件
+        // ============================================================
+        document.getElementById('sponsorBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             alert('赞助功能正在开发中，敬请期待！');
         });
-        
-        // 收集所有需要动画的元素
-        const animatedElements = [
-            ...document.querySelectorAll('.feature-item'),
-            ...document.querySelectorAll('.detail-card'),
-            ...document.querySelectorAll('.version-liquid'),
-            ...document.querySelectorAll('.btn-liquid'),
-            ...document.querySelectorAll('.social-link'),
-            ...document.querySelectorAll('.footer')
-        ];
-        
-        // 启动画面结束后触发动画
-        setTimeout(() => {
-            splashScreen.classList.add('fade-out');
-            
-            setTimeout(() => {
-                splashScreen.style.display = 'none';
-                
-                // 1. 导航栏整体淡入
-                nav.classList.add('animate-in');
-                
-                // 2. 导航链接逐个淡入
-                navLinks.forEach((link, index) => {
-                    setTimeout(() => {
-                        link.classList.add('animate-in');
-                    }, index * 70 + 80);
-                });
-                
-                // 3. 卡片内容依次淡入
-                animatedElements.forEach((el, index) => {
-                    let delay = 0;
-                    if (el.classList.contains('feature-item')) {
-                        const idx = Array.from(el.parentNode.children).indexOf(el);
-                        delay = 0.05 + idx * 0.06;
-                    } else if (el.classList.contains('detail-card')) {
-                        const idx = Array.from(el.parentNode.children).indexOf(el);
-                        delay = 0.40 + idx * 0.06;
-                    } else if (el.classList.contains('version-liquid')) {
-                        const idx = Array.from(el.parentNode.children).indexOf(el);
-                        delay = 0.70 + idx * 0.06;
-                    } else if (el.classList.contains('btn-liquid')) {
-                        delay = 0.65;
-                    } else if (el.classList.contains('social-link')) {
-                        delay = 0.78;
-                    } else if (el.classList.contains('footer')) {
-                        delay = 0.85;
-                    }
-                    setTimeout(() => {
-                        el.classList.add('animate-in');
-                    }, delay * 1000 + 120);
-                });
-                
-            }, 150);
-        }, 1400);
-        
-        // 导航链接平滑滚动
+
         document.querySelectorAll('.navbar a[href]').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetId = link.getAttribute('href').substring(1);
-                const target = document.getElementById(targetId);
+                const target = document.getElementById(link.getAttribute('href').substring(1));
                 if (target) {
-                    const yOffset = 80;
-                    const y = target.getBoundingClientRect().top + window.scrollY - yOffset;
+                    const y = target.getBoundingClientRect().top + window.scrollY - 80;
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }
             });
         });
-        
-        // 下载按钮滚动
-        const mainBtn = document.getElementById('mainDownloadBtn');
-        const downloadSection = document.getElementById('download');
-        if (mainBtn) {
-            mainBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (downloadSection) {
-                    const yOffset = 80;
-                    const y = downloadSection.getBoundingClientRect().top + window.scrollY - yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                }
-            });
-        }
-        
-        // 版本按钮 alert
-        const stable = document.getElementById('stableBtn');
-        const beta = document.getElementById('betaBtn');
-        if (stable) {
-            stable.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert('镜像准备中\n稳定版 eckOS 即将开放，请保持关注。');
-            });
-        }
-        if (beta) {
-            beta.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert('开发中\n内核镜像尚在内部迭代，稍后推出。');
-            });
-        }
-        
-        // 降级方案
-        if (window.CSS && CSS.supports('backdrop-filter', 'blur(4px)') === false) {
+
+        document.getElementById('mainDownloadBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = document.getElementById('download');
+            if (target) {
+                const y = target.getBoundingClientRect().top + window.scrollY - 80;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+        });
+
+        document.getElementById('stableBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('镜像准备中\n稳定版 eckOS 即将开放，请保持关注。');
+        });
+        document.getElementById('betaBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('开发中\n内核镜像尚在内部迭代，稍后推出。');
+        });
+
+        // ---- 降级 ----
+        if (window.CSS && !CSS.supports('backdrop-filter', 'blur(4px)')) {
             const style = document.createElement('style');
             style.textContent = `
-                .glass-3d, .navbar, .tagline, .section-head, .btn-liquid, .btn-version, .social-link, .footer, .feature-icon, .tech-badge, .version-sub {
-                    background: rgba(60, 65, 75, 0.4) !important;
+                .glass-3d, .navbar, .tagline, .section-head, .btn-liquid, .btn-version,
+                .social-link, .footer, .feature-icon, .tech-badge, .version-sub {
+                    background: rgba(16, 20, 30, 0.7) !important;
                     backdrop-filter: none !important;
                 }
             `;
             document.head.appendChild(style);
         }
-    })();
-</script>
+
+        console.log('🌊 eckOS · 双模式背景已启动 (流体/水)');
+    </script>
 </body>
 </html>
